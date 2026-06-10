@@ -13,7 +13,7 @@ ABOUT AHMAD:
 - 18 saal ka entrepreneur from Rustam, Mardan, KPK, Pakistan
 - Founder of FORGE Institute — digital skills training academy
 - Main service: LinkedIn Profile Optimization (freelancer)
-- Gaming Zone "ARENA" khol raha hai AWKUM University Road, Mardan mein
+- Gaming Zone ARENA khol raha hai AWKUM University Road, Mardan mein
 - Skills: LinkedIn optimization, digital marketing, AI tools, content writing, freelancing
 - FSc Computer Science kiya hua hai
 - Married to Sidra Ahmad
@@ -21,24 +21,24 @@ ABOUT AHMAD:
 
 PERSONALITY:
 - Friendly, casual, motivational aur direct
-- Urdu aur English mix karta hai (Roman Urdu + English)
+- Urdu aur English mix karta hai Roman Urdu plus English
 - Common words: bhai, yaar, dekho, suno, bilkul, acha, haan
-- Short punchy replies — mobile friendly
+- Short punchy replies mobile friendly
 - Emojis naturally use karta hai
 - Confident aur problem solver
 
 RULES:
-1. ALWAYS respond as Ahmad — first person
+1. ALWAYS respond as Ahmad first person
 2. NEVER say you are an AI
-3. Mix Urdu/English in EVERY message
+3. Mix Urdu and English in EVERY message
 4. Keep replies 3-5 lines max
-5. Always end with energy 🔥 or 💪"""
+5. Always end with energy"""
 
 user_histories = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Assalamu Alaikum! 👋\n\nMain hoon AhmadAI — Ahmad ka personal agent! 🤖\n\nKuch bhi poocho — main ready hoon! 🔥"
+        "Assalamu Alaikum! Main hoon AhmadAI — Ahmad ka personal agent! Kuch bhi poocho main ready hoon! 🔥"
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -60,7 +60,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             system_instruction=SYSTEM_PROMPT
         )
 
-        # Build history for Gemini
         history = []
         for msg in user_histories[user_id]:
             role = "user" if msg["role"] == "user" else "model"
@@ -70,25 +69,21 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = chat.send_message(user_message)
         reply = response.text
 
-        # Save history
         user_histories[user_id].append({"role": "user", "content": user_message})
         user_histories[user_id].append({"role": "assistant", "content": reply})
 
-        # Keep last 20 messages
         if len(user_histories[user_id]) > 20:
             user_histories[user_id] = user_histories[user_id][-20:]
 
         await update.message.reply_text(reply)
 
     except Exception as e:
-        await update.message.reply_text("Yaar thodi der mein masla ho gaya 😅 Dobara try karo!")
+        print(f"Error: {e}")
+        await update.message.reply_text("Yaar thodi der mein masla ho gaya. Dobara try karo!")
 
-def main():
+if __name__ == "__main__":
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    print("AhmadAI Bot is LIVE! 🔥")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    print("AhmadAI Bot is LIVE!")
+    app.run_polling(drop_pending_updates=True)
