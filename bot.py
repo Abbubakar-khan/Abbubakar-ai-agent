@@ -1,10 +1,10 @@
 import os
-from groq import Groq
+import google.generativeai as genai
 from telegram import Update
 from telegram.ext import Application, MessageHandler, CommandHandler, filters, ContextTypes
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 SYSTEM_PROMPT = """You are AhmadAI — the personal AI agent of Ahmad (Muhammad Abubakar Ahmad Khan).
 You think, speak and respond EXACTLY like Ahmad.
@@ -48,33 +48,35 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_id not in user_histories:
         user_histories[user_id] = []
 
-    user_histories[user_id].append({
-        "role": "user",
-        "content": user_message
-    })
-
-    if len(user_histories[user_id]) > 20:
-        user_histories[user_id] = user_histories[user_id][-20:]
-
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id,
         action="typing"
     )
 
     try:
-        client = Groq(api_key=GROQ_API_KEY)
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "system", "content": SYSTEM_PROMPT}] + user_histories[user_id],
-            max_tokens=500
+        genai.configure(api_key=GEMINI_API_KEY)
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction=SYSTEM_PROMPT
         )
 
-        reply = response.choices[0].message.content
+        # Build history for Gemini
+        history = []
+        for msg in user_histories[user_id]:
+            role = "user" if msg["role"] == "user" else "model"
+            history.append({"role": role, "parts": [msg["content"]]})
 
-        user_histories[user_id].append({
-            "role": "assistant",
-            "content": reply
-        })
+        chat = model.start_chat(history=history)
+        response = chat.send_message(user_message)
+        reply = response.text
+
+        # Save history
+        user_histories[user_id].append({"role": "user", "content": user_message})
+        user_histories[user_id].append({"role": "assistant", "content": reply})
+
+        # Keep last 20 messages
+        if len(user_histories[user_id]) > 20:
+            user_histories[user_id] = user_histories[user_id][-20:]
 
         await update.message.reply_text(reply)
 
